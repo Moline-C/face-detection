@@ -76,3 +76,104 @@ class FaceDetector:
         if encodings:
             return encodings[0]
         return None
+
+    def draw_face_boxes(self, image: np.ndarray, face_locations: List) -> np.ndarray:
+        """
+        Draw bounding boxes around detected faces.
+
+        Args:
+            image: BGR image
+            face_locations: List of (top, right, bottom, left) tuples
+
+        Returns:
+            np.ndarray: Image with drawn boxes
+        """
+        # TODO: Create a copy to avoid modifying original
+        output = image.copy()
+
+        # Draw rectangle for each face
+        for (top, right, bottom, left) in face_locations:
+            # TODO: Draw rectangle using cv2.rectangle()
+            # Parameters: image, (x1, y1), (x2, y2), color_BGR, thickness
+            # Use green color (0, 255, 0) and thickness 2
+            cv2.rectangle(output, (left, top), (right, bottom),
+                        (0, 255, 0), 2)
+
+        return output
+
+
+    def draw_face_landmarks(self, image: np.ndarray, face_mesh_results) -> np.ndarray:
+        """
+        Draw MediaPipe facial landmarks (468 points).
+
+        Args:
+            image: BGR image
+            face_mesh_results: MediaPipe face mesh results
+
+        Returns:
+            np.ndarray: Image with drawn landmarks
+        """
+        # TODO: Create a copy
+        output = image.copy()
+
+        # Check if faces were detected
+        if face_mesh_results.multi_face_landmarks:
+            # Process each detected face
+            for face_landmarks in face_mesh_results.multi_face_landmarks:
+                # TODO: Draw tessellation (full mesh)
+                self.mp_drawing.draw_landmarks(
+                    image=output,
+                    landmark_list=face_landmarks,
+                    connections=self.mp_face_mesh.FACEMESH_TESSELATION,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=self.mp_drawing_styles.get_default_face_mesh_tesselation_style()
+                )
+
+                # TODO: Draw contours (emphasize features)
+                self.mp_drawing.draw_landmarks(
+                    image=output,
+                    landmark_list=face_landmarks,
+                    connections=self.mp_face_mesh.FACEMESH_CONTOURS,
+                    landmark_drawing_spec=None,
+                    connection_drawing_spec=self.mp_drawing_styles.get_default_face_mesh_contours_style()
+                )
+
+        return output
+
+    def crop_face(self, image: np.ndarray, face_location: Tuple, padding: int = 20) -> np.ndarray:
+        """
+        Crop face region with padding.
+
+        Args:
+            image: BGR image
+            face_location: (top, right, bottom, left) tuple
+            padding: Extra pixels around face
+
+        Returns:
+            np.ndarray: Cropped face image
+        """
+        top, right, bottom, left = face_location
+
+        # Add padding but stay within image bounds
+        height, width = image.shape[:2]
+
+        # TODO: Add padding to top, ensuring >= 0
+        top = max(0, top - padding)
+
+        # TODO: Add padding to bottom, ensuring <= height
+        bottom = min(height, bottom + padding)
+
+        # TODO: Add padding to left, ensuring >= 0
+        left = max(0, left - padding)
+
+        # TODO: Add padding to right, ensuring <= width
+        right = min(width, right + padding)
+
+        # TODO: Crop using NumPy array slicing [y1:y2, x1:x2]
+        return image[top:bottom, left:right]
+
+
+    def cleanup(self):
+        """Release MediaPipe resources."""
+        # TODO: Close the face_mesh object
+        self.face_mesh.close()
