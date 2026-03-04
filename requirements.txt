@@ -3,3 +3,5 @@ mediapipe>=0.10.0
 face-recognition>=1.3.0
 numpy>=1.24.0
 PySide6>=6.5.0
+
+#tells you what dependecies are in your project, install these libraries at these versions or better
