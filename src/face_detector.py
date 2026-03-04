@@ -13,10 +13,10 @@ class FaceDetector:
     """Handles face detection, landmark detection, and face encoding."""
 
     def __init__(self):
-        # TODO: Get MediaPipe solutions.face_mesh module
+        # Get MediaPipe solutions.face_mesh module
         self.mp_face_mesh = mp.solutions.face_mesh
 
-        # TODO: Create FaceMesh object with these parameters:
+        # Create FaceMesh object with these parameters:
         # - static_image_mode=False (for video)
         # - max_num_faces=10
         # - min_detection_confidence=0.5
@@ -28,7 +28,7 @@ class FaceDetector:
             min_tracking_confidence= 0.5
         )
 
-        # TODO: Get MediaPipe drawing utilities
+        # Get MediaPipe drawing utilities
         self.mp_drawing = mp.solutions.drawing_utils
         self.mp_drawing_styles = mp.solutions.drawing_styles
 
@@ -42,14 +42,14 @@ class FaceDetector:
         Returns:
             Tuple of (face_locations, face_landmarks)
         """
-        # TODO: Convert BGR to RGB (required by face detection libraries)
+        # Convert BGR to RGB (required by face detection libraries)
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # TODO: Get face locations using face_recognition.face_locations()
+        # Get face locations using face_recognition.face_locations()
         # Use model="hog" for speed (or "cnn" for accuracy)
         face_locations = face_recognition.face_locations(rgb_image, model="hog")
 
-        # TODO: Get facial landmarks using MediaPipe face_mesh.process()
+        # Get facial landmarks using MediaPipe face_mesh.process()
         results = self.face_mesh.process(rgb_image)
 
         return face_locations, results
@@ -65,10 +65,10 @@ class FaceDetector:
         Returns:
             np.ndarray: 128D encoding, or None if failed
         """
-        # TODO: Convert BGR to RGB
+        # Convert BGR to RGB
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-        # TODO: Generate encoding using face_recognition.face_encodings()
+        # Generate encoding using face_recognition.face_encodings()
         # Pass the rgb_image and a list containing the face_location
         encodings = face_recognition.face_encodings(rgb_image, [face_location])
 
@@ -88,12 +88,12 @@ class FaceDetector:
         Returns:
             np.ndarray: Image with drawn boxes
         """
-        # TODO: Create a copy to avoid modifying original
+        # Create a copy to avoid modifying original
         output = image.copy()
 
         # Draw rectangle for each face
         for (top, right, bottom, left) in face_locations:
-            # TODO: Draw rectangle using cv2.rectangle()
+            # Draw rectangle using cv2.rectangle()
             # Parameters: image, (x1, y1), (x2, y2), color_BGR, thickness
             # Use green color (0, 255, 0) and thickness 2
             cv2.rectangle(output, (left, top), (right, bottom),
@@ -113,14 +113,14 @@ class FaceDetector:
         Returns:
             np.ndarray: Image with drawn landmarks
         """
-        # TODO: Create a copy
+        # Create a copy
         output = image.copy()
 
         # Check if faces were detected
         if face_mesh_results.multi_face_landmarks:
             # Process each detected face
             for face_landmarks in face_mesh_results.multi_face_landmarks:
-                # TODO: Draw tessellation (full mesh)
+                # Draw tessellation (full mesh)
                 self.mp_drawing.draw_landmarks(
                     image=output,
                     landmark_list=face_landmarks,
@@ -129,7 +129,7 @@ class FaceDetector:
                     connection_drawing_spec=self.mp_drawing_styles.get_default_face_mesh_tesselation_style()
                 )
 
-                # TODO: Draw contours (emphasize features)
+                # Draw contours (emphasize features)
                 self.mp_drawing.draw_landmarks(
                     image=output,
                     landmark_list=face_landmarks,
@@ -157,23 +157,24 @@ class FaceDetector:
         # Add padding but stay within image bounds
         height, width = image.shape[:2]
 
-        # TODO: Add padding to top, ensuring >= 0
+        # Add padding to top, ensuring >= 0
         top = max(0, top - padding)
 
-        # TODO: Add padding to bottom, ensuring <= height
+        # Add padding to bottom, ensuring <= height
         bottom = min(height, bottom + padding)
 
-        # TODO: Add padding to left, ensuring >= 0
+        # Add padding to left, ensuring >= 0
         left = max(0, left - padding)
 
-        # TODO: Add padding to right, ensuring <= width
+        # Add padding to right, ensuring <= width
         right = min(width, right + padding)
 
-        # TODO: Crop using NumPy array slicing [y1:y2, x1:x2]
+        # Crop using NumPy array slicing [y1:y2, x1:x2]
         return image[top:bottom, left:right]
 
 
     def cleanup(self):
         """Release MediaPipe resources."""
-        # TODO: Close the face_mesh object
+        # Close the face_mesh object
         self.face_mesh.close()
+
