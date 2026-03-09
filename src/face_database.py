@@ -59,7 +59,7 @@ class FaceDatabase:
         # TODO: Open file in write mode
         with open(self.index_file, 'w') as f:
             # TODO: Write index as JSON with indentation for readability
-            json.dump(self.index, f, fp=f)
+            json.dump(self.index, f, indent=4)
 
     @staticmethod
     def _sanitize_name(name: str) -> str:
@@ -242,7 +242,7 @@ class FaceDatabase:
             return False
 
         # TODO: Update display_name in index
-        self.index[old_name]["display_name"] = new_name
+        self.index[old_name]["name"] = new_name
 
         self._save_index()
         return True

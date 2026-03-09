@@ -223,3 +223,273 @@ class FaceRecognitionApp(QMainWindow):
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
         self.status_bar.showMessage("Ready")
+
+    def start_live_feed(self):
+        """Start or stop live camera feed."""
+
+        # TODO: Check if currently in live mode
+        if self.current_mode == 'live':
+            # Stop camera
+            self.timer.stop()
+            self.camera.stop()
+            self.current_mode = None
+            self.live_btn.setText("📹 Live Feed")
+            self.display_label.setText("Live feed stopped")
+            self.save_face_btn.setEnabled(False)
+            self.status_bar.showMessage("Live feed stopped")
+            return
+
+        # TODO: Try to start camera
+        if self.camera.start():
+            self.current_mode = 'live'
+
+            # TODO: Start timer with 30ms interval (~30 FPS)
+            self.timer.start(30)
+
+            self.live_btn.setText("⏹️ Stop Feed")
+            self.status_bar.showMessage("Live feed started")
+        else:
+            # TODO: Show warning message box
+            QMessageBox.warning(self, "Camera Error", "Failed to start camera")
+
+    def update_live_feed(self):
+        """Update live feed frame (called by timer)."""
+
+        # TODO: Read frame from camera
+        frame = self.camera.get_frame()
+        if frame is None:
+            return
+
+        # TODO: Store copy as current_image
+        self.current_image = frame.copy()
+
+        # TODO: Detect faces and landmarks
+        self.current_face_locations, self.current_face_landmarks = \
+            self.detector.detect_faces(frame)
+
+        # TODO: Draw face boxes if faces detected
+        if self.current_face_locations:
+            frame = self.detector.draw_faces(frame, self.current_face_locations)
+            self.save_face_btn.setEnabled(True)
+        else:
+            self.save_face_btn.setEnabled(False)
+
+        # TODO: Draw landmarks if detected
+        if self.current_face_landmarks:
+            frame = self.detector.draw_landmarks(frame, self.current_face_landmarks)
+
+        # TODO: Try to match first face
+        if self.current_face_locations:
+            first_face = self.current_face_locations[0]
+
+            # TODO: Get face encoding
+            encoding = self.detector.get_encoding(self.current_image, first_face)
+
+            if encoding is not None:
+                # TODO: Find closest match in database
+                match = self.database.find_closest_match(encoding)
+
+                if match:
+                    name, distance = match
+                    self.status_bar.showMessage(f"Match: {name} (distance: {distance:.3f})")
+                else:
+                    self.status_bar.showMessage("No match found")
+
+        # TODO: Display frame
+        self.display_frame(frame)
+
+    def upload_image(self):
+        """Upload and process a static image."""
+
+        # TODO: Open file dialog using QFileDialog.getOpenFileName()
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Image",
+            "",
+            "Images (*.png *.jpg *.jpeg *.bmp)"
+        )
+
+        if not file_path:
+            return  # User cancelled
+
+        # Stop live feed if running
+        if self.current_mode == 'live':
+            self.timer.stop()
+            self.camera.stop()
+            self.live_btn.setText("📹 Live Feed")
+
+        self.current_mode = 'image'
+
+        # TODO: Load image using cv2.imread()
+        image = cv2.imread(file_path)
+        if image is None:
+            QMessageBox.warning(self, "Error", "Failed to load image")
+            return
+
+        # TODO: Store copy and detect faces
+        self.current_image = image.copy()
+        self.current_face_locations, self.current_face_landmarks = \
+            self.detector.detect_faces(image)
+
+        # TODO: Draw boxes if faces found
+        if self.current_face_locations:
+            image = self.detector.draw_faces(image, self.current_face_locations)
+            self.save_face_btn.setEnabled(True)
+        else:
+            self.save_face_btn.setEnabled(False)
+            QMessageBox.information(self, "No Faces", "No faces detected in image")
+
+        # TODO: Draw landmarks
+        if self.current_face_landmarks:
+            image = self.detector.draw_landmarks(image, self.current_face_landmarks)
+
+        # TODO: Try to match first face
+        if self.current_face_locations:
+            first_face = self.current_face_locations[0]
+            encoding = self.detector.get_encoding(self.current_image, first_face)
+
+            if encoding is not None:
+                match = self.database.find_closest_match(encoding)
+                if match:
+                    name, distance = match
+                    self.status_bar.showMessage(f"Match: {name} (distance: {distance:.3f})")
+                else:
+                    self.status_bar.showMessage("No match found")
+
+        # Display image
+        self.display_frame(image)
+
+    def save_current_face(self):
+        """Save the first detected face to the database."""
+
+        # TODO: Validate we have a face
+        if not self.current_face_locations or self.current_image is None:
+            QMessageBox.warning(self, "No Face", "No face detected to save")
+            return
+
+        # TODO: Prompt user for name using QInputDialog.getText()
+        name, ok = QInputDialog.getText(self, "Save Face", "Enter person's name:")
+        if not ok or not name:
+            return
+
+        # Get first face
+        first_face = self.current_face_locations[0]
+
+        # TODO: Crop face using detector
+        face_image = self.detector.crop_face(self.current_image, first_face)
+
+        # TODO: Generate encoding
+        encoding = self.detector.get_encoding(self.current_image, first_face)
+        if encoding is None:
+            QMessageBox.warning(self, "Error", "Failed to generate face encoding")
+            return
+
+        # TODO: Save to database
+        if self.database.save_face(name, face_image, encoding):
+            QMessageBox.information(self, "Success", f"Face saved as '{name}'")
+            self.load_saved_faces()  # Refresh list
+        else:
+            QMessageBox.warning(self, "Error", "Failed to save face")
+
+    def load_saved_faces(self, search_query: str = ""):
+        """Load and display saved faces in the sidebar."""
+
+        # TODO: Clear existing widgets (iterate in reverse)
+        for i in reversed(range(self.faces_layout.count())):
+            widget = self.faces_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+
+        # TODO: Get faces from database (filtered or all)
+        if search_query:
+            faces = self.database.search_faces(search_query)
+        else:
+            faces = self.database.get_all_faces()
+
+        # TODO: Create widget for each face
+        for face in faces:
+            widget = FaceItemWidget(
+                face['name'],
+                face['display_name'],
+                face['face_path']
+            )
+            # TODO: Connect rename signal
+            widget.rename_requested.connect(self.on_face_renamed)
+            self.faces_layout.addWidget(widget)
+
+    def on_search_changed(self, text: str):
+        """Handle search input changes."""
+        # TODO: Reload faces with filter
+        self.load_saved_faces(text)
+
+
+    def on_face_renamed(self, old_name: str, new_name: str):
+        """Handle face rename request."""
+        # TODO: Rename in database
+        if self.database.rename_face(old_name, new_name):
+            self.status_bar.showMessage(f"Renamed to '{new_name}'")
+
+    def display_frame(self, frame: np.ndarray):
+        """Display a frame in the GUI."""
+
+        # TODO: Convert BGR to RGB
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+        # Calculate resize to fit display
+        h, w, ch = rgb_frame.shape
+        display_width = self.display_label.width()
+        display_height = self.display_label.height()
+
+        # Calculate aspect ratio
+        aspect = w / h
+        if display_width / display_height > aspect:
+            new_height = display_height
+            new_width = int(new_height * aspect)
+        else:
+            new_width = display_width
+            new_height = int(new_width / aspect)
+
+        # TODO: Resize frame using cv2.resize()
+        resized = cv2.resize(rgb_frame, (new_width, new_height))
+        h, w, ch = resized.shape
+
+        # TODO: Convert to Qt image
+        bytes_per_line = ch * w
+        qt_image = QImage(resized.data, w, h, bytes_per_line,
+                           QImage.Format_RGB888)
+
+        # TODO: Set pixmap on display label
+        self.display_label.setPixmap(QPixmap.fromImage(qt_image))
+
+
+    def closeEvent(self, event):
+        """Handle window close event - cleanup resources."""
+        # TODO: Stop timer
+        self.timer.stop()
+
+        # TODO: Stop camera
+        self.camera.stop()
+
+        # TODO: Cleanup detector
+        self.detector.cleanup()
+
+        # TODO: Accept event to allow close
+        event.accept()
+
+    def main():
+        """Main entry point for the application."""
+
+        # TODO: Create Qt application
+        app = QApplication(sys.argv)
+
+        # TODO: Create main window
+        window = FaceRecognitionApp()
+
+        # TODO: Show window
+        window.show()
+
+        # TODO: Start event loop and exit with return code
+        sys.exit(app.exec())
+
+    if __name__ == "__main__":
+        main()
