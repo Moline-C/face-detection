@@ -221,7 +221,7 @@ class FaceDatabase:
         # TODO: Only return match if within threshold
         if best_distance <= threshold:
             # Get display name
-            display_name = self.index[best_match].get("display_name", best_match)
+            display_name = self.index[best_match].get("name", best_match)
             return (display_name, best_distance)
 
         return None

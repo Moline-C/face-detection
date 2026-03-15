@@ -369,4 +369,3 @@ class CameraHandler:
 
 
 
-        ing = False
